@@ -25,7 +25,7 @@ data class TekomAdapter(
                 .into(ListPostsAdapterBinding.gambar)
             ListPostsAdapterBinding.name.text = dataItem2?.namalengkap
             ListPostsAdapterBinding.datepost.text = dataItem2?.nim.toString()
-            ListPostsAdapterBinding.namaP.text = dataItem2?.namalengkap
+            ListPostsAdapterBinding.namaP.text = dataItem2?.gender
             ListPostsAdapterBinding.root.setOnClickListener{
                 onListItemClick(dataItem2)
             }

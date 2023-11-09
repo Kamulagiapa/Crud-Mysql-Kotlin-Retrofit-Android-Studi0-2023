@@ -12,9 +12,13 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.muhammad_idris.Model.DataItem
 import com.example.muhammad_idris.Model.Response
 import com.example.muhammad_idris.Network.NetworkConfig
+import com.example.muhammad_idris.TambahActivity
 import com.example.muhammad_idris.databinding.ActivityMainBinding
 import retrofit2.Call
 import retrofit2.Callback
+import android.app.AlertDialog
+import android.widget.Toast
+import com.example.muhammad_idris.UbahActivity
 
 class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private lateinit var binding: ActivityMainBinding
@@ -29,6 +33,11 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
         // Panggil metode getPosts() untuk memuat data dari server
         getPosts()
+        binding.btnTambah.setOnClickListener {
+            // Membuat intent untuk pindah ke TambahActivity
+            val intent = Intent(this, TambahActivity::class.java)
+            startActivity(intent)
+        }
 
     }
 
@@ -62,13 +71,60 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
     private fun setToAdapter(receivedDatas: List<DataItem>?) {
         binding.newsList.adapter = null
         val adapter = TekomAdapter(receivedDatas) {
-            val detailNewsIntent = Intent(this@MainActivity, TekomAdapter::class.java)
-            detailNewsIntent.putExtra("idNews", it?.gender)
-            startActivity(detailNewsIntent)
+            showOptionsDialog(it)
+
+
         }
         val lm = LinearLayoutManager(this)
         binding.newsList.layoutManager = lm
         binding.newsList.itemAnimator = DefaultItemAnimator()
         binding.newsList.adapter = adapter
+
     }
+    private fun showOptionsDialog(dataItem: DataItem?) {
+        val options = arrayOf("Edit Data", "Delete Data")
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Choose an option")
+        builder.setItems(options) { dialog, which ->
+            when (which) {
+                0 -> editData(dataItem)
+                1 -> deleteData(dataItem)
+            }
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+        builder.show()
+    }
+
+    private fun editData(dataItem: DataItem?) {
+        val intent = Intent(this, UbahActivity::class.java)
+        intent.putExtra("nama", dataItem?.namalengkap)
+        intent.putExtra("nim", dataItem?.nim.toString())
+        intent.putExtra("gender", dataItem?.gender)
+        intent.putExtra("prodi", dataItem?.idprodi)
+        startActivity(intent)
+    }
+
+    private fun deleteData(dataItem: DataItem?) {
+        val apiServices = NetworkConfig().getService()
+        dataItem?.nim?.let {
+            apiServices.hapusMahasiswa(it).enqueue(object : Callback<Response> {
+                override fun onResponse(call: Call<Response>, response: retrofit2.Response<Response>) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@MainActivity, "Data berhasil dihapus", Toast.LENGTH_SHORT).show()
+                        getPosts() // Refresh data setelah penghapusan
+                    } else {
+                        Toast.makeText(this@MainActivity, "Gagal menghapus data", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<Response>, t: Throwable) {
+                    Toast.makeText(this@MainActivity, "Gagal menghapus data", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+    }
+
 }
+
